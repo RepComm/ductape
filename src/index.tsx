@@ -45,6 +45,21 @@ function copyText(str: string) {
 export function _2dTo1d(x: number, y: number, width: number) {
   return x + width * y;
 }
+//https://stackoverflow.com/a/68146412/8112809
+function downloadBlob(content: string, filename: string, contentType: string) {
+  // Create a blob
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+
+  // Create a link to download it
+  const pom = document.createElement('a');
+  pom.href = url;
+  pom.setAttribute('download', filename);
+  pom.click();
+}
+function downloadCSV (content: string, filename: string) {
+  downloadBlob(content, filename, "text/csv;charset=utf-8;");
+}
 export class Main extends Component<Props, State> {
   constructor() {
     super();
@@ -55,6 +70,7 @@ export class Main extends Component<Props, State> {
       whiteoutHeight: 0,
     };
   }
+  fname: string = "scan.png";
 
   renderTable() {
     const content = this.state.output;
@@ -82,17 +98,21 @@ export class Main extends Component<Props, State> {
     return <div>
       <button onClick={() => {
 
-        //impl 3
+        //impl 3 - modified from
+        //https://stackoverflow.com/a/68146412/8112809
         const data = this.state.output;
         let text = "";
         for (let y = 0; y < this.state.rowCount; y++) {
           for (let x = 0; x < this.state.colCount; x++) {
             const idx = _2dTo1d(x, y, this.state.colCount);
-            text += `${data[idx].trim()}\t`;
+            const v = data[idx].trim().replace(/"/g, "''");
+            text += `"${v}",`;
           }
-          text += "\n";
+          text += "\r\n";
         }
-        copyText(text);
+        downloadCSV(text, `${this.fname}.csv`);
+        // copyText(text);
+
 
         //impl 2
         // copyElement(tableRef.current);
@@ -107,7 +127,7 @@ export class Main extends Component<Props, State> {
         // } catch (ex) {
         //   alert(`Copy issue: ${ex}`);
         // }
-      }}>Copy Table</button>
+      }}>Download CSV</button>
       <table ref={tableRef} className={style.table}>
         {rows}
       </table>
@@ -126,6 +146,11 @@ export class Main extends Component<Props, State> {
               const t = evt.target as HTMLInputElement;
               if (t.files.length < 1) return;
               const f = t.files[0];
+              if (f.name) {
+                this.fname = f.name;
+              } else {
+                this.fname = "scan";
+              }
               try {
                 const img = new Image();
                 const url = URL.createObjectURL(f);

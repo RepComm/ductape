@@ -1,0 +1,90 @@
+:root {
+	font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	display: flex;
+	min-height: 100vh;
+  background-color: #222;
+}
+
+.app {
+  display: flex;
+  flex: 1;
+}
+
+.main {
+	min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.main .canvas {
+  flex: 1;
+}
+
+.header {
+  flex: 0.05;
+  display: flex;
+}
+input[type=number] {
+  max-width: 4em;
+}
+input[type=file] {
+  max-width: 22em;
+}
+.tool {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.imgtable {
+  flex: 1;
+  max-height: 50vh;
+  max-width: 100vw;
+  overflow: scroll;
+}
+.canvas {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+.output {
+  flex: 1;
+  display: flex;
+  overflow: scroll;
+  max-height: 50vh;
+
+}
+
+.row:nth-child(even) > .cell:nth-child(odd) {
+  background-color: #262626;
+}
+.table {
+  padding: 1em;
+  background-color: #141313;
+}
+.cell {
+  padding: 0.5em;
+}
+.row:nth-child(odd) {
+  background-color: #333333;
+}
+.gen {
+  background-color: #242424;
+  border-radius: 0.25em;
+  border-width: 1px;
+  border-style: solid;
+  border-color: white;
+}

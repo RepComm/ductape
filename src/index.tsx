@@ -14,6 +14,7 @@ interface State {
   colCount: number;
   whiteoutWidth: number;
   whiteoutHeight: number;
+  tableStr?: string;
 }
 
 function selectElement(e: HTMLElement) {
@@ -38,7 +39,12 @@ function copyElement(e: HTMLElement) {
     alert(`Copy issue: ${ex}`);
   }
 }
-
+function copyText(str: string) {
+  navigator.clipboard.writeText(str);
+}
+export function _2dTo1d(x: number, y: number, width: number) {
+  return x + width * y;
+}
 export class Main extends Component<Props, State> {
   constructor() {
     super();
@@ -49,6 +55,7 @@ export class Main extends Component<Props, State> {
       whiteoutHeight: 0,
     };
   }
+
   renderTable() {
     const content = this.state.output;
 
@@ -74,8 +81,24 @@ export class Main extends Component<Props, State> {
     const tableRef = useRef<HTMLTableElement>();
     return <div>
       <button onClick={() => {
-        copyElement(tableRef.current);
 
+        //impl 3
+        const data = this.state.output;
+        let text = "";
+        for (let y = 0; y < this.state.rowCount; y++) {
+          for (let x = 0; x < this.state.colCount; x++) {
+            const idx = _2dTo1d(x, y, this.state.colCount);
+            text += `${data[idx].trim()}\t`;
+          }
+          text += "\n";
+        }
+        copyText(text);
+
+        //impl 2
+        // copyElement(tableRef.current);
+
+
+        //impl 1
         // let text = tableRef.current.innerText.trim();
 
         // try {

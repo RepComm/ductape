@@ -102,6 +102,7 @@ export class Main extends Component<Props, State> {
         //https://stackoverflow.com/a/68146412/8112809
         const data = this.state.output;
         let text = "";
+        console.log(data, this.state.rowCount, this.state.colCount);
         for (let y = 0; y < this.state.rowCount; y++) {
           for (let x = 0; x < this.state.colCount; x++) {
             const idx = _2dTo1d(x, y, this.state.colCount);

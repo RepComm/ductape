@@ -1,7 +1,6 @@
-import { Component, VNode, createRef, render } from 'preact';
+import { Component, createRef, render } from 'preact';
 import style from "./style.module.css";
-import { MutableRef, useRef } from 'preact/hooks';
-import { Grid, dist, gridToRects, lerp } from './grid';
+import { useRef } from 'preact/hooks';
 import { ocr_rects } from './ocr';
 import { ImgTable } from './imgtable';
 
@@ -13,6 +12,8 @@ interface State {
   img?: HTMLImageElement;
   rowCount: number;
   colCount: number;
+  whiteoutWidth: number;
+  whiteoutHeight: number;
 }
 
 function selectElement(e: HTMLElement) {
@@ -43,7 +44,9 @@ export class Main extends Component<Props, State> {
     super();
     this.state = {
       rowCount: 1,
-      colCount: 1
+      colCount: 1,
+      whiteoutWidth: 0,
+      whiteoutHeight: 0,
     };
   }
   renderTable() {
@@ -72,7 +75,7 @@ export class Main extends Component<Props, State> {
     return <div>
       <button onClick={() => {
         copyElement(tableRef.current);
-        
+
         // let text = tableRef.current.innerText.trim();
 
         // try {
@@ -94,84 +97,130 @@ export class Main extends Component<Props, State> {
     return (
       <div className={style.main}>
         <div className={style.header}>
-          <input type="file" onChange={(evt) => {
-            const t = evt.target as HTMLInputElement;
-            if (t.files.length < 1) return;
-            const f = t.files[0];
-            try {
-              const img = new Image();
-              const url = URL.createObjectURL(f);
-              img.src = url;
-              img.addEventListener("load", () => {
-                this.setState({ img });
-              });
-            } catch (ex) {
-              alert(`Issue using file as image: ${ex}`);
-            }
-          }} />
-          <button
-            ref={genBtn}
-            className={style.gen}
-            onClick={() => {
-              genBtn.current.disabled = true;
-              const rects = imgtblRef.current.rects();
-              const img = imgtblRef.current.img();
+          <div className={style.menu_col}>
 
-              ocr_rects(
-                rects,
-                img.src,
-                (v) => {
-                  const p = Math.floor(v*100);
-                  const bg = `linear-gradient(90deg, #082400 0%, #09793d ${p}%, #6c6c6c00 ${p+5}%)`;
-                  console.log(bg);
-                  genBtn.current.style.background = bg;
-                }
-              ).then((output) => {
-                genBtn.current.disabled = false;
-                this.setState({
-                  output
+            <input type="file" onChange={(evt) => {
+              const t = evt.target as HTMLInputElement;
+              if (t.files.length < 1) return;
+              const f = t.files[0];
+              try {
+                const img = new Image();
+                const url = URL.createObjectURL(f);
+                img.src = url;
+                img.addEventListener("load", () => {
+                  this.setState({ img });
                 });
-              });
-            }}>Generate</button>
-          <span># Rows</span>
-          <input
-            type="number"
-            min="1"
-            max="500"
-            value={this.state.rowCount}
-            onChange={(evt) => {
-              const rowCount = (evt.target as HTMLInputElement).valueAsNumber;
-              const diff = rowCount - this.state.rowCount;
-              this.setState({
-                rowCount
-              });
-              if (diff > 0) {
-                imgtblRef.current.addRow();
-              } else {
-                imgtblRef.current.removeRow();
+              } catch (ex) {
+                alert(`Issue using file as image: ${ex}`);
               }
-            }}
-          />
+            }} />
+            <button
+              ref={genBtn}
+              className={style.gen}
+              onClick={() => {
+                genBtn.current.disabled = true;
+                const rects = imgtblRef.current.rects();
+                const img = imgtblRef.current.img();
 
-          <span># Columns</span>
-          <input
-            type="number"
-            min="1"
-            max="32"
-            value={this.state.colCount}
-            onChange={(evt) => {
-              const colCount = (evt.target as HTMLInputElement).valueAsNumber;
-              const diff = colCount - this.state.colCount;
-              this.setState({
-                colCount
-              });
-              if (diff > 0) {
-                imgtblRef.current.addCol();
-              } else {
-                imgtblRef.current.removeCol();
-              }
-            }}
-          />
+                ocr_rects(
+                  rects,
+                  img.src,
+                  (v) => {
+                    const p = Math.floor(v * 100);
+                    if (p < 98) {
+                      const bg = `linear-gradient(90deg, #082400 0%, #09793d ${p}%, #6c6c6c00 ${p + 5}%)`;
+                      genBtn.current.style.background = bg;
+                    } else {
+                      genBtn.current.style.background = "unset";
+                    }
+                  }
+                ).then((output) => {
+                  genBtn.current.disabled = false;
+                  this.setState({
+                    output
+                  });
+                });
+              }}>Generate</button>
+          </div>
+          <div className={style.menu_col}>
+            <span># Rows</span>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              value={this.state.rowCount}
+              onChange={(evt) => {
+                const rowCount = (evt.target as HTMLInputElement).valueAsNumber;
+                const diff = rowCount - this.state.rowCount;
+                this.setState({
+                  rowCount
+                });
+                if (diff > 0) {
+                  imgtblRef.current.addRow();
+                } else {
+                  imgtblRef.current.removeRow();
+                }
+              }}
+            />
+          </div>
+          <div className={style.menu_col}>
+
+            <span className={style.col_item}># Columns</span>
+            <input
+              className={style.col_item}
+              type="number"
+              min="1"
+              max="32"
+              value={this.state.colCount}
+              onChange={(evt) => {
+                const colCount = (evt.target as HTMLInputElement).valueAsNumber;
+                const diff = colCount - this.state.colCount;
+                this.setState({
+                  colCount
+                });
+                if (diff > 0) {
+                  imgtblRef.current.addCol();
+                } else {
+                  imgtblRef.current.removeCol();
+                }
+              }}
+            />
+          </div>
+          <div className={style.menu_col}>
+            <span>Border Whiteout</span>
+            <div className={style.menu_row}>
+              <span>Height:</span>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={this.state.whiteoutHeight}
+                onChange={(evt) => {
+                  const whiteoutHeight = (evt.target as HTMLInputElement).valueAsNumber;
+                  this.setState({
+                    whiteoutHeight
+                  });
+                  imgtblRef.current.state.whiteout.h = whiteoutHeight;
+                }}
+              />
+            </div>
+            <div className={style.menu_row}>
+              <span>Width:</span>
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={this.state.whiteoutWidth}
+                onChange={(evt) => {
+                  const whiteoutWidth = (evt.target as HTMLInputElement).valueAsNumber;
+                  this.setState({
+                    whiteoutWidth
+                  });
+                  imgtblRef.current.state.whiteout.w = whiteoutWidth;
+                }}
+              />
+            </div>
+          </div>
         </div>
         <div className={style.tool}>
           <ImgTable

@@ -13,6 +13,7 @@ export interface Props {
 }
 export interface State {
   grid: Grid;
+  whiteout: { h: number; w: number };
 }
 type CTX = CanvasRenderingContext2D;
 
@@ -35,10 +36,15 @@ export class ImgTable extends Component<Props, State> {
         x: 10, y: 10,
         columns: new Array(props.colCount),
         rows: new Array(props.rowCount)
+      },
+      whiteout: {
+        h: 0,
+        w: 0
       }
     };
     this.state.grid.columns.fill(50);
     this.state.grid.rows.fill(50);
+
   }
 
   needsDraw: boolean;
@@ -202,7 +208,12 @@ export class ImgTable extends Component<Props, State> {
     return -1;
   }
 
-  drawGrid(ctx: CTX, strokeStyle = "#22f", strokeWidth = 2) {
+  drawGrid(
+    ctx: CTX,
+    strokeStyle = "#22f",
+    rowStrokeSize = 2,
+    colStrokeSize = 2
+    ) {
     const g = this.state.grid;
     ctx.save();
 
@@ -216,15 +227,24 @@ export class ImgTable extends Component<Props, State> {
     ctx.moveTo(minx, miny);
     ctx.lineTo(minx, maxy);
 
-    ctx.moveTo(minx, miny);
-    ctx.lineTo(maxx, miny);
-
     let cx = g.x;
     for (let ix = 0; ix < g.columns.length; ix++) {
       cx += g.columns[ix];
       ctx.moveTo(cx, miny);
       ctx.lineTo(cx, maxy);
     }
+
+    if (rowStrokeSize !== colStrokeSize) {
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = colStrokeSize;
+      ctx.stroke();
+
+      ctx.beginPath();
+    }
+
+
+    ctx.moveTo(minx, miny);
+    ctx.lineTo(maxx, miny);
 
     let cy = g.y;
     for (let iy = 0; iy < g.rows.length; iy++) {
@@ -236,7 +256,7 @@ export class ImgTable extends Component<Props, State> {
     }
 
     ctx.strokeStyle = strokeStyle;
-    ctx.lineWidth = strokeWidth;
+    ctx.lineWidth = rowStrokeSize;
     ctx.stroke();
 
     ctx.restore();
@@ -284,7 +304,7 @@ export class ImgTable extends Component<Props, State> {
     ctx.stroke();
   }
 
-  draw(ctx: CTX, clean = false, whiteout = 0) {
+  draw(ctx: CTX, clean = false) {
     ctx.save();
     ctx.fillStyle = "#999";
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -295,13 +315,18 @@ export class ImgTable extends Component<Props, State> {
     }
 
     this.drawImage(ctx);
+    if (this.state.whiteout.h > 0 || this.state.whiteout.w > 0) {
+      this.drawGrid(
+        ctx,
+        "#fff",
+        this.state.whiteout.h,
+        this.state.whiteout.w
+      );
+    }
     if (!clean) {
       this.drawGrid(ctx);
       this.drawSelectors(ctx);
       this.drawPointer(ctx);
-    }
-    if (whiteout > 0) {
-      this.drawGrid(ctx, "#fff", whiteout);
     }
 
     ctx.restore();
@@ -311,21 +336,42 @@ export class ImgTable extends Component<Props, State> {
   winPointerDownCb = () => {
     this.pointerDown = false;
   };
+  setSize (w: number, h: number) {
+    const cref = this.cref;
+    w = Math.floor(w);
+    h = Math.floor(h);
+    cref.current.width = w;
+    cref.current.height = h;
+    cref.current.style.width = `${w}px`;
+    cref.current.style.height = `${h}px`;
+    // console.log("size",
+    //   w,h,
+    //   cref.current.width,
+    //   cref.current.height
+    // );
+  }
   winResizeCb = () => {
     const cref = this.cref;
     if (!cref.current) return;
-    if (!this.props.img) {
-      const blankW = cref.current.parentElement.clientWidth;
-      const blankH = cref.current.parentElement.clientHeight;
 
-      cref.current.width = blankW;
-      cref.current.width = blankH;
-      cref.current.style.width = `${blankW}px`;
-      cref.current.style.height = `${blankH}px`;
-
-      console.log(blankW, blankH);
+    if (this.props.img) {
+      this.setSize(
+        this.props.img.width,
+        this.props.img.height
+      );
+    } else {
+      this.setSize(
+        cref.current.parentElement.clientWidth,
+        cref.current.parentElement.clientHeight
+      );
     }
   };
+
+  componentDidMount(): void {
+    setTimeout(()=>{
+      this.winResizeCb();
+    }, 100);
+  }
 
   componentWillMount(): void {
     window.addEventListener("mouseup", this.winPointerDownCb);
@@ -398,14 +444,13 @@ export class ImgTable extends Component<Props, State> {
       }
       cy += height;
     }
-    console.log(results, g);
     return results;
   }
 
   ctx: CTX;
 
   img () {
-    this.draw(this.ctx, true, 3);
+    this.draw(this.ctx, true);
     return {
       src: this.cref.current.toDataURL("image/png"),
       width: this.cref.current.width,
@@ -422,17 +467,8 @@ export class ImgTable extends Component<Props, State> {
     const cref = this.cref;
 
     useEffect(() => {
-      if (!this.props.img) {
-        const blankW = cref.current.parentElement.clientWidth;
-        const blankH = cref.current.parentElement.clientHeight;
-
-        cref.current.width = blankW;
-        cref.current.width = blankH;
-        cref.current.style.width = `${blankW}px`;
-        cref.current.style.height = `${blankH}px`;
-
-        console.log(blankW, blankH);
-      }
+      this.winResizeCb();
+      
       const ctx = cref.current.getContext("2d", {
         alpha: false,
         willReadFrequently: true,

@@ -1,6 +1,5 @@
 
 import Tesseract, { PSM, RecognizeResult, Rectangle } from "tesseract.js";
-import { integerRects as integerRect, scaleRect } from "./grid";
 
 const worker = await Tesseract.createWorker("eng", 1, {
   workerPath: "/node_modules/tesseract.js/dist/worker.min.js",
@@ -11,6 +10,16 @@ await worker.setParameters({
 });
 
 export type ImageBlobList = Array<string>;
+
+/**floor every value in obj o if it is a number*/
+function floor_obj (o: any) {
+  for (const key in o) {
+    const value = o[key];
+    if (typeof(value) === "number") {
+      o[key] = Math.floor(value);
+    }
+  }
+}
 
 export async function ocr_rects (
   rects: Rectangle[],
@@ -26,7 +35,7 @@ export async function ocr_rects (
     i++;
     progress = i/max;
 
-    integerRect(rectangle);
+    floor_obj(rectangle);
     
     let res: RecognizeResult;
     try {
